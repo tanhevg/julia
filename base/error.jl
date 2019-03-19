@@ -85,6 +85,32 @@ function _reformat_bt(bt, bt2)
     ret
 end
 
+# Same as above, but inspects a single, stacked array to parse out interepreter frames
+function _reformat_bt(bt)
+    ret = Vector{Union{InterpreterIP,Ptr{Cvoid},UInt}}()
+    i = 1
+    while i <= length(bt)
+        ip = bt[i]
+        if ip == (-1)%UInt
+            # The next one is really a CodeInfo
+            push!(ret, InterpreterIP(
+                unsafe_pointer_to_objref(Ptr{Cvoid}(bt[i+1]::UInt)),
+                bt[i+2])
+            )
+            i += 3
+        elseif ip == 0x0
+            # end-of-block marker
+            push!(ret, ip)
+            i += 1
+        else
+            # regular pointer
+            push!(ret, Ptr{Cvoid}(ip))
+            i += 1
+        end
+    end
+    return ret
+end
+
 """
     backtrace()
 
