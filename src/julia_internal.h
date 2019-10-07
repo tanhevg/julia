@@ -639,7 +639,7 @@ typedef int bt_cursor_t;
 // Maximum number of elements of bt_data taken up by interpreter frame
 #define JL_BT_MAX_ENTRY_SIZE 3
 size_t rec_backtrace(uintptr_t *bt_data, size_t *bt_size, size_t maxsize,
-                     int skip) JL_NOTSAFEPOINT;
+                     int skip, int add_interp_frames) JL_NOTSAFEPOINT;
 // Record backtrace from a signal handler. `ctx` is the context of the code
 // which was asynchronously interrupted.
 size_t rec_backtrace_ctx(uintptr_t *bt_data, size_t *bt_size, size_t maxsize,
