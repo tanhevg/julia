@@ -298,9 +298,6 @@ endif
 	-$(INSTALL_M) $(build_bindir)/libopenlibm.dll.a $(DESTDIR)$(libdir)/
 else
 
-	# Install `7z` into libexec/
-	$(INSTALL_M) $(build_bindir)/7z$(EXE) $(DESTDIR)$(libexecdir)/
-
 # Copy over .dSYM directories directly for Darwin
 ifneq ($(DARWIN_FRAMEWORK),1)
 ifeq ($(OS),Darwin)
@@ -311,6 +308,9 @@ ifeq ($(BUNDLE_DEBUG_LIBS),1)
 	-cp -a $(build_private_libdir)/sys-debug.dylib.dSYM $(DESTDIR)$(private_libdir)
 endif
 endif
+
+	# Install `7z` into libexec/
+	$(INSTALL_M) $(build_bindir)/7z$(EXE) $(DESTDIR)$(libexecdir)/
 
 	for suffix in $(JL_TARGETS) ; do \
 		for lib in $(build_libdir)/lib$${suffix}.*$(SHLIB_EXT)*; do \
