@@ -7,7 +7,7 @@ Time.init()
 let iobuf = IOBuffer()
     for fmt in (:tree, :flat)
         Test.@test_logs (:warn, r"^There were no samples collected\.") Time.print(iobuf, format=fmt, C=true)
-        Test.@test_logs (:warn, r"^There were no samples collected\.") Time.print(iobuf, [0x0000000000000001], Dict(0x0000000000000001 => [Base.StackTraces.UNKNOWN]), format=fmt, C=false)
+        Test.@test_logs (:warn, r"^There were no samples collected\.") Time.print(iobuf, [0x0000000000000001], Profile.LineInfoDict(0x0000000000000001 => [Base.StackTraces.UNKNOWN]), format=fmt, C=false)
     end
 end
 
@@ -29,7 +29,7 @@ let r = Time.retrieve()
         serialize(io, r)
         close(io)
         open(path) do io
-            @test isa(deserialize(io), Tuple{Vector{UInt},Dict{UInt64,Vector{Base.StackTraces.StackFrame}}})
+            @test isa(deserialize(io), Tuple{Vector{UInt},Profile.LineInfoDict})
         end
     end
 end

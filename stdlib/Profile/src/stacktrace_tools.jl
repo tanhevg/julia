@@ -1,8 +1,9 @@
 import Base.StackTraces: lookup, UNKNOWN, show_spec_linfo, StackFrame
 
 
-const LineInfoDict = Dict{UInt64, Vector{StackFrame}}
-const LineInfoFlatDict = Dict{UInt64, StackFrame}
+const IP = Union{UInt, Ptr{Nothing}, Base.InterpreterIP}
+const LineInfoDict = Dict{IP, Vector{StackFrame}}
+const LineInfoFlatDict = Dict{IP, StackFrame}
 
 struct ProfileFormat
     maxdepth::Int
@@ -31,16 +32,12 @@ Given a list of instruction pointers, build a dictionary mapping from those poin
 LineInfo objects (as returned by `StackTraces.lookup()`).  This allows us to quickly take
 a list of instruction pointers and convert it to `LineInfo` objects.
 """
-function getdict(data::Vector{UInt})
-    dict = LineInfoDict()
-    for ip in data
-        get!(() -> lookup(convert(Ptr{Cvoid}, ip)), dict, UInt64(ip))
-    end
-    return dict
+function getdict(data::Vector)
+    return LineInfoDict(ip=>lookup(ip) for ip in unique(filter(!isequal(0x0), data)))
 end
 
 """
-    flatten(btdata::Vector, lidict::LineInfoDict) -> (newdata::Vector{UInt64}, newdict::LineInfoFlatDict)
+    flatten(btdata::Vector, lidict::LineInfoDict) -> (newdata::Vector{IP}, newdict::LineInfoFlatDict)
 
 Produces "flattened" backtrace data. Individual instruction pointers
 sometimes correspond to a multi-frame backtrace due to inlining; in
@@ -52,7 +49,7 @@ function flatten(data::Vector, lidict::LineInfoDict)
     # Makes fake instruction pointers, counting down from typemax(UInt)
     newip = typemax(UInt64) - 1
     taken = Set(keys(lidict))  # make sure we don't pick one that's already used
-    newdict = Dict{UInt64,StackFrame}()
+    newdict = LineInfoFlatDict()
     newmap  = Dict{UInt64,Vector{UInt64}}()
     for (ip, trace) in lidict
         if length(trace) == 1
@@ -71,7 +68,7 @@ function flatten(data::Vector, lidict::LineInfoDict)
             newmap[ip] = newm
         end
     end
-    newdata = UInt64[]
+    newdata = IP[]
     for ip::UInt64 in data
         if haskey(newmap, ip)
             append!(newdata, newmap[ip])

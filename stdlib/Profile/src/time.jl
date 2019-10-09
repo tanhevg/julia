@@ -1,6 +1,6 @@
 module Time
 
-using ..Profile: LineInfoDict, LineInfoFlatDict, ProfileFormat
+using ..Profile: IP, LineInfoDict, LineInfoFlatDict, ProfileFormat
 using ..Profile: getdict, flatten, tree, flat
 import ..Profile: callers
 
@@ -140,7 +140,7 @@ a dictionary `lidict` of line information.
 
 See `Profile.print([io], data)` for an explanation of the valid keyword arguments.
 """
-print(data::Vector{<:Unsigned} = fetch(), lidict::Union{LineInfoDict, LineInfoFlatDict} = getdict(data); kwargs...) =
+print(data::Vector{IP} = fetch(), lidict::Union{LineInfoDict, LineInfoFlatDict} = getdict(data); kwargs...) =
     print(stdout, data, lidict; kwargs...)
 
 """

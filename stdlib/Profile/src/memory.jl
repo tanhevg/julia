@@ -259,6 +259,7 @@ function read_and_coalesce_memprofile_data()
     alloc_data = unsafe_wrap(Array, get_memprofile_alloc_data(), (get_memprofile_alloc_data_len(),))
 
     # Build backtrace lookup table
+    bt_data = Base._reformat_bt(bt_data)
     bt_lookup = getdict(bt_data)
 
     # These are chunks of memory that have been allocated, but not yet freed.  They are keyed by

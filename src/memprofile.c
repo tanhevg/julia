@@ -164,7 +164,7 @@ JL_DLLEXPORT void jl_memprofile_track_alloc(void *v, uint16_t tag, size_t allocs
     size_t bt_size_step = 0;
     int incomplete = rec_backtrace(memprof_bt_data + memprof_bt_data_size, &bt_size_step,
                                    memprof_bt_data_size_max - memprof_bt_data_size - 1,
-                                   0, 0);
+                                   0, 1);
 
     // If we overran this buffer, then don't record the memory trace and quit.
     if (incomplete) {
