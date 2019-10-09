@@ -294,14 +294,10 @@ function read_and_coalesce_memprofile_data()
 
         # Are we an allocation?
         if a.allocsz != 0
-            @info("Opening $(chunk_id) $(a.T) $(a.allocsz)")
-
             # Assert that we're not inserting an identical chunk
             @assert !(chunk_id in keys(open_chunks_map)) "Doubly-opened memory chunk!"
             open_chunks_map[chunk_id] = open_AI(a, bt)
         else
-            @info("Closing $(chunk_id) $(a.T)")
-
             # If this `a` represents a free(), let's see if we're closing a previously opened chunk.
             if !(chunk_id in keys(open_chunks_map))
                 push!(ghost_chunks, (a, bt))
@@ -312,10 +308,6 @@ function read_and_coalesce_memprofile_data()
                 delete!(open_chunks_map, chunk_id)
             end
         end
-    end
-
-    if !isempty(ghost_chunks)
-        @warn "Attempted to close $(length(ghost_chunks)) ghost memory chunks!"
     end
 
     # Any leftover "open" chunks are just plain old leaked memory.
