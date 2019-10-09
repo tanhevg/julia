@@ -202,9 +202,10 @@ JL_DLLEXPORT void jl_memprofile_track_alloc(void *v, uint16_t tag, size_t allocs
 
 JL_DLLEXPORT void jl_memprofile_set_typeof(void * v, void * ty) JL_NOTSAFEPOINT
 {
-    // We only search the very last allocation
-    if (memprof_alloc_data_size > 0) {
-        if (memprof_alloc_data[memprof_alloc_data_size-1].memory_location == v) {
+    if (__unlikely(jl_memprofile_running())) {
+        // We only search the very last allocation
+        if (memprof_alloc_data_size > 0 &&
+            memprof_alloc_data[memprof_alloc_data_size-1].memory_location == v) {
             // If it matches, then set the type pointer
             memprof_alloc_data[memprof_alloc_data_size-1].type = ty;
         }
