@@ -556,6 +556,7 @@ static CallInst *emit_jlcall(jl_codectx_t &ctx, Value *theFptr, Value *theF,
 static Value *literal_pointer_val(jl_codectx_t &ctx, jl_value_t *p);
 static GlobalVariable *prepare_global_in(Module *M, GlobalVariable *G);
 #define prepare_global(G) prepare_global_in(jl_Module, (G))
+static Instruction *tbaa_decorate(MDNode *md, Instruction *load_or_store);
 
 // --- convenience functions for tagging llvm values with julia types ---
 
@@ -576,6 +577,24 @@ static AllocaInst *emit_static_alloca(jl_codectx_t &ctx, Type *lty)
 {
     return new AllocaInst(lty, 0, "", /*InsertBefore=*/ctx.ptlsStates);
 }
+
+static void undef_derived_strct(IRBuilder<> &irbuilder, Value *ptr, jl_datatype_t *sty, MDNode *tbaa)
+{
+    assert(ptr->getType()->getPointerAddressSpace() != AddressSpace::Tracked);
+    if (sty->layout->npointers == 0)
+        return;
+    ptr = irbuilder.CreateBitCast(ptr, T_prjlvalue->getPointerTo(ptr->getType()->getPointerAddressSpace()));
+    Value *V_null = ConstantPointerNull::get(cast<PointerType>(T_prjlvalue));
+    size_t i, nf = jl_datatype_nfields(sty);
+    for (i = 0; i < nf; i++) {
+        if (jl_field_isptr(sty, i)) {
+            tbaa_decorate(tbaa, irbuilder.CreateStore(V_null,
+                    irbuilder.CreateInBoundsGEP(T_prjlvalue, ptr,
+                                ConstantInt::get(T_size, jl_field_offset(sty, i) / sizeof(void*)))));
+        }
+    }
+}
+
 
 static inline jl_cgval_t ghostValue(jl_value_t *typ)
 {

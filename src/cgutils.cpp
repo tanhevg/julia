@@ -510,7 +510,9 @@ static unsigned convert_struct_offset(Type *lty, unsigned byte_offset)
 {
     const DataLayout &DL = jl_data_layout;
     const StructLayout *SL = DL.getStructLayout(cast<StructType>(lty));
-    return SL->getElementContainingOffset(byte_offset);
+    unsigned idx = SL->getElementContainingOffset(byte_offset);
+    assert(SL->getElementOffset(idx) == byte_offset);
+    return idx;
 }
 
 static unsigned convert_struct_offset(jl_codectx_t &ctx, Type *lty, unsigned byte_offset)
@@ -650,7 +652,8 @@ static Type *julia_struct_to_llvm(jl_value_t *jt, jl_unionall_t *ua, bool *isbox
                     continue;
                 }
                 else {
-                    lty = julia_type_to_llvm(ty);
+                    lty = julia_struct_to_llvm(ty, NULL, &isptr);
+                    assert(!isptr);
                 }
                 if (lasttype != NULL && lasttype != lty)
                     isarray = false;
@@ -2506,8 +2509,9 @@ static jl_cgval_t emit_new_struct(jl_codectx_t &ctx, jl_value_t *ty, size_t narg
 
             for (unsigned i = 0; i < na; i++) {
                 jl_value_t *jtype = jl_svecref(sty->types, i);
-                const jl_cgval_t &fval_info = argv[i];
+                jl_cgval_t fval_info = argv[i];
                 emit_typecheck(ctx, fval_info, jtype, "new");
+                fval_info = update_julia_type(ctx, fval_info, jtype);
                 if (type_is_ghost(lt))
                     continue;
                 Type *fty = julia_type_to_llvm(jtype);
@@ -2576,14 +2580,7 @@ static jl_cgval_t emit_new_struct(jl_codectx_t &ctx, jl_value_t *ty, size_t narg
                                      literal_pointer_val(ctx, (jl_value_t*)ty));
         jl_cgval_t strctinfo = mark_julia_type(ctx, strct, true, ty);
         strct = decay_derived(strct);
-        for (size_t i = 0; i < nf; i++) {
-            if (jl_field_isptr(sty, i)) {
-                tbaa_decorate(strctinfo.tbaa, ctx.builder.CreateStore(
-                        ConstantPointerNull::get(cast<PointerType>(T_prjlvalue)),
-                        ctx.builder.CreateInBoundsGEP(T_prjlvalue, emit_bitcast(ctx, strct, T_pprjlvalue),
-                                ConstantInt::get(T_size, jl_field_offset(sty, i) / sizeof(void*)))));
-            }
-        }
+        undef_derived_strct(ctx.builder, strct, sty, strctinfo.tbaa);
         for (size_t i = nargs; i < nf; i++) {
             if (!jl_field_isptr(sty, i) && jl_is_uniontype(jl_field_type(sty, i))) {
                 tbaa_decorate(tbaa_unionselbyte, ctx.builder.CreateStore(
