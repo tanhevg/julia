@@ -2699,9 +2699,7 @@ static void jl_gc_queue_bt_buf(jl_gc_mark_cache_t *gc_cache, jl_gc_mark_sp_t *sp
 
 static void gc_track_pool_frees(void)
 {
-    // Don't do anything if the memory profiler isn't running.
-    if (!jl_memprofile_running())
-        return;
+    // TODO: this is too costly, inline in sweep_page again
 
     // Iterate over the three levels of our pagetable.  We collapse indentation here
     // to make it more readable, especially as we do essentially the same thing
